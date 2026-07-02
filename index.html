@@ -165,14 +165,13 @@ html.night .verdict.v-go{background:none;-webkit-background-clip:initial;backgro
 html.night .spark polyline{stroke:var(--accent)}
 .spark .axis{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
 .spark text{fill:var(--ink-faint);font-size:9px}
-.cloudbars{display:flex;gap:6px;align-items:flex-end;height:64px;margin-top:12px}
-.cloudbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
-.cloudbar .bar{
-  width:100%;border-radius:4px;min-height:2px;
-  background:linear-gradient(180deg,rgba(76,201,240,.5),rgba(76,201,240,.15));
-  border:1px solid rgba(76,201,240,.22);
-}
-html.night .cloudbar .bar{background:rgba(224,79,48,.22);border-color:rgba(224,79,48,.3)}
+.cloudbars{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
+.cloudbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cloudglyph{width:100%;max-width:44px;height:auto;display:block}
+.cloudglyph rect{fill:rgba(203,213,235,.65)}
+.cloudglyph .outline{fill:none;stroke:var(--ink-faint);stroke-width:1.4;stroke-linejoin:round}
+html.night .cloudglyph rect{fill:rgba(224,79,48,.4)}
+.cloudbar .pct{font-size:.62rem;color:var(--ink-dim)}
 .cloudbar .lbl{font-size:.65rem;color:var(--ink-faint)}
 .note{color:var(--ink-faint);font-size:.8rem;margin-top:10px}
 .quiet-error{color:var(--ink-faint);font-size:.85rem;font-style:italic}
@@ -243,6 +242,25 @@ footer a{color:var(--ink-faint);text-decoration:underline}
 .locbar .locname{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .locbar .locact{margin-left:auto;color:var(--ink-faint);font-size:.78rem;text-decoration:underline;white-space:nowrap}
 .locbar:active{background:var(--card)}
+.cond{color:var(--ink-dim);font-size:.86rem;margin-top:6px}
+.cond:empty{display:none}
+details.explain{margin-top:12px}
+details.explain summary{
+  color:var(--ink-faint);font-size:.78rem;cursor:pointer;list-style:none;
+  text-decoration:underline dotted;width:fit-content;
+}
+details.explain summary::-webkit-details-marker{display:none}
+details.explain p{color:var(--ink-dim);font-size:.82rem;margin-top:8px;line-height:1.6}
+.installhint{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card-2);border:1px solid var(--line);border-radius:12px;
+  padding:10px 14px;margin-bottom:12px;font-size:.8rem;color:var(--ink-dim);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.installhint span{flex:1}
+.ihx{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:.9rem;padding:2px 4px}
+.spot .dir{display:inline-block;color:var(--accent-2);font-size:.78rem;margin-top:4px;text-decoration:underline}
+.shower .remind{margin-top:8px}
 </style>
 </head>
 <body>
@@ -266,14 +284,23 @@ footer a{color:var(--ink-faint);text-decoration:underline}
     <div class="verdict-label">Aurora chance tonight</div>
     <div class="verdict v-unknown" id="verdict">Looking up…</div>
     <div class="why" id="why"></div>
+    <div class="cond" id="condLine"></div>
     <div class="secondary-line" id="secondary"></div>
     <div class="asof" id="asof"></div>
+    <details class="explain"><summary>how the verdict works</summary>
+      <p>It blends tonight’s forecast Kp (how disturbed Earth’s magnetic field is, 0–9), cloud cover during true darkness, the moon, and live solar wind. From Tasmania, Kp&nbsp;4 usually means a soft glow on camera; Kp&nbsp;5+ can be naked-eye; 6+ means drop things and drive. “Go now” only appears when it’s actually dark and reasonably clear right now. It’s a probability, not a promise — the aurora keeps its own schedule.</p>
+    </details>
   </div>
   <div class="navlist">
     <a class="navcard" href="#/aurora">Aurora detail<small>Kp, wind, cloud, moon</small></a>
     <a class="navcard" href="#/sky">Milky Way &amp; meteors<small>What else is up</small></a>
     <a class="navcard" href="#/spots">Dark sky spots<small>Where to stand</small></a>
     <a class="navcard" href="#/log">Your log<small id="logCardHint">Nights out this year</small></a>
+  </div>
+  <div class="installhint hidden" id="installHint">
+    <span id="installText"></span>
+    <button class="btn small hidden" id="installBtn">Install</button>
+    <button class="ihx" id="installDismiss" aria-label="Dismiss">✕</button>
   </div>
 </section>
 
@@ -284,23 +311,36 @@ footer a{color:var(--ink-faint);text-decoration:underline}
     <h2>Kp index</h2>
     <div class="bignum" id="kpNow">–</div>
     <div class="subnum" id="kpUpdated"></div>
+    <div class="subnum" id="kpForecastLine"></div>
     <svg class="spark" id="kpSpark" viewBox="0 0 300 56" preserveAspectRatio="none" aria-label="Kp over the last 24 hours"></svg>
     <div class="note">Last 24 hours, planetary Kp (NOAA). Tasmania usually needs Kp 5+ for a show, Kp 4 for a camera glow on the southern horizon.</div>
+    <details class="explain"><summary>what is Kp?</summary>
+      <p>Kp measures how disturbed Earth’s magnetic field is, worldwide, on a 0–9 scale updated every three hours. The further you are from the poles, the higher it needs to be before the aurora reaches you. Tasmania sits well for the southern auroral oval: 4 is worth a glance south, 5 is promising, 6+ is a show. The outlook line is NOAA’s prediction for the biggest bin overlapping tonight’s darkness.</p>
+    </details>
   </div>
   <div class="card">
     <h2>Solar wind</h2>
     <div class="sentence" id="windSentence">Waiting on the feed…</div>
     <div class="numbers" id="windNumbers"></div>
+    <details class="explain"><summary>what do these numbers mean?</summary>
+      <p>The aurora is solar wind hitting Earth’s magnetic field. Two numbers matter most: speed (500+ km/s is fast) and Bz — the wind’s magnetic field tilt. When Bz points south (a negative number), it locks into Earth’s field and pours energy in. Fast wind plus a strongly negative Bz is the recipe; Bt is the field’s overall strength, so a big Bt with Bz south is even better.</p>
+    </details>
   </div>
   <div class="card">
     <h2>Cloud</h2>
     <div class="sentence" id="cloudNow">–</div>
     <div class="cloudbars" id="cloudBars"></div>
     <div class="note" id="cloudNote">Next six hours over your location (Open-Meteo).</div>
+    <details class="explain"><summary>how to read the clouds</summary>
+      <p>Each cloud fills to the fraction of sky covered that hour — empty outline means clear, full means overcast. Under about 40% you’re in business; aurora and stars punch through gaps. Over 85% it doesn’t matter what the sun is doing.</p>
+    </details>
   </div>
   <div class="card">
     <h2>Darkness &amp; moon</h2>
     <div id="darkKv"></div>
+    <details class="explain"><summary>why these times matter</summary>
+      <p>“Properly dark” is the end of astronomical twilight — the sun 18° below the horizon, no trace of daylight left. That window is when faint things are visible. The moon is the other spotlight: below about 40% illumination, or below the horizon, keeps the sky dark enough for the subtle stuff. A bright aurora doesn’t care about the moon; everything fainter does.</p>
+    </details>
   </div>
 </section>
 
@@ -310,12 +350,19 @@ footer a{color:var(--ink-faint);text-decoration:underline}
   <div class="card">
     <h2>Milky Way core</h2>
     <div class="sentence" id="mwText"></div>
+    <div class="sub" id="mwTonight" style="color:var(--ink-dim);font-size:.9rem;margin-top:6px"></div>
     <div class="note" id="mwMoonNote"></div>
+    <details class="explain"><summary>what’s “the core”?</summary>
+      <p>The bright centre of our galaxy, in Sagittarius — the part the photographs are made of. It needs three things: a dark sky, a low moon, and height above the horizon. From Tasmania it rides high through autumn and winter evenings. The line above is computed for your location: when it’s highest tonight and which way to face.</p>
+    </details>
   </div>
   <div class="card">
     <h2>Meteor showers</h2>
     <div id="showerList"></div>
     <div class="note">Peak dates shift by a day either side year to year. Rates assume a dark sky and some patience.</div>
+    <details class="explain"><summary>about reminders &amp; rates</summary>
+      <p>“Add reminder” saves the peak night into your phone’s calendar with an evening alert — no notifications from the app itself, nothing leaves your device. Quoted rates assume a perfectly dark sky and the radiant overhead; halve them for real conditions, then halve again if the moon is up.</p>
+    </details>
   </div>
 </section>
 
@@ -325,7 +372,10 @@ footer a{color:var(--ink-faint);text-decoration:underline}
   <div class="card">
     <h2>Dark sky spots</h2>
     <div id="spotList"></div>
-    <div class="note">A starter list of twenty-odd real places — pins are approximate and notes are drafts. Darker dots mean darker sky. “Faces south” matters for aurora; anywhere dark works for the Milky Way.</div>
+    <div class="note">A starter list of twenty-odd real places — pins are approximate and notes are drafts.</div>
+    <details class="explain"><summary>how to read this list</summary>
+      <p>Dots are a rough darkness rating — five filled dots is genuinely dark, two means suburban glow. “Faces south” matters for aurora because from Tasmania the show hangs over the southern horizon; for the Milky Way and meteors, any dark sky works. “Take me there” opens directions in your maps app.</p>
+    </details>
   </div>
 </section>
 
@@ -454,6 +504,21 @@ function moonIllumination(date) {
   const inc2 = Math.atan2(sdist * Math.sin(phi2), m2.dist - sdist * Math.cos(phi2));
   const waxing = ((1 + Math.cos(inc2)) / 2) > fraction;
   return { fraction, waxing };
+}
+/* Galactic centre (Sgr A*, RA 17h45.7m, Dec −29.0°) — where the Milky Way
+   core sits. Alt/az of it tells you when and where to look. */
+const GALACTIC_CORE = { ra: RAD * 266.417, dec: RAD * -29.008 };
+function coreAltAz(date, lat, lng) {
+  const lw = RAD * -lng, phi = RAD * lat, d = toDays(date);
+  const H = siderealTime(d, lw) - GALACTIC_CORE.ra;
+  const alt = altitudeOf(H, phi, GALACTIC_CORE.dec);
+  // azimuth from south (westward positive), shifted to compass-from-north
+  const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(GALACTIC_CORE.dec) * Math.cos(phi)) + Math.PI;
+  return { alt, az };
+}
+function compass(az) {
+  const dirs = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+  return dirs[Math.round((((az / RAD) % 360) + 360) % 360 / 45) % 8];
 }
 /* Find times where altFn crosses targetAlt between t0 and t1.
    Returns [{time, rising}] — rising true when climbing through the target. */
@@ -633,13 +698,33 @@ async function fetchMag() {
     }
   }
 }
+async function fetchKpForecast() {
+  const rows = noaaRows(await cachedFetch("kpf", "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json", 30));
+  state.kpForecast = rows
+    .map(r => ({ time: noaaTime(r.time_tag), kp: parseFloat(r.kp), tag: r.observed }))
+    .filter(r => !isNaN(r.kp));
+}
+/* Highest Kp bin overlapping tonight's darkness window. */
+function kpTonight() {
+  if (!state.kpForecast || !state.night) return null;
+  const start = Math.max(Date.now(), state.night.duskAstro ? state.night.duskAstro.valueOf() : Date.now());
+  const end = state.night.dawnAstro ? state.night.dawnAstro.valueOf() : start + 8 * 3600000;
+  let best = null;
+  for (const r of state.kpForecast) {
+    const t = r.time.valueOf();
+    if (t + 3 * 3600000 > start && t < end && (!best || r.kp > best.kp)) best = r;
+  }
+  return best;
+}
 async function fetchCloud() {
   const { lat, lng } = state.loc;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&hourly=cloud_cover&forecast_days=2&timezone=auto`;
-  const data = await cachedFetch("cloud-" + lat.toFixed(2) + "-" + lng.toFixed(2), url, 30);
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&hourly=cloud_cover,temperature_2m,apparent_temperature&forecast_days=2&timezone=auto`;
+  const data = await cachedFetch("cloud2-" + lat.toFixed(2) + "-" + lng.toFixed(2), url, 30);
   state.cloud = {
     times: data.hourly.time.map(t => new Date(t)),
-    cover: data.hourly.cloud_cover
+    cover: data.hourly.cloud_cover,
+    temp: data.hourly.temperature_2m,
+    feels: data.hourly.apparent_temperature
   };
 }
 
@@ -695,12 +780,14 @@ function moonPhrase() {
   return "moon stays down";
 }
 function computeVerdict() {
-  if (state.kp == null) {
+  const fc = kpTonight();
+  if (state.kp == null && !fc) {
     return state.fetchedAt
       ? { level: -1, label: "No signal", why: "Couldn’t reach the space weather feed. Try again when you’re back in range." }
       : { level: -1, label: "Looking up…", why: "" };
   }
-  const kp = state.kp;
+  // judge tonight on the higher of current Kp and the forecast peak tonight
+  const kp = Math.max(state.kp != null ? state.kp : -1, fc ? fc.kp : -1);
   let level = kp >= 6 ? 3 : kp >= 5 ? 2 : kp >= 4 ? 1 : 0;
   // solar wind can promote or demote by one step
   if (state.mag && state.wind) {
@@ -729,12 +816,18 @@ function computeVerdict() {
     }
     if (!darkNow || !cloudNowOk) level = 2;
   }
-  const parts = ["Kp " + kp.toFixed(1)];
+  // lead with the forecast when it says tonight beats right now
+  let kpPhrase = "Kp " + kp.toFixed(1);
+  if (fc && fc.tag !== "observed" && fc.kp >= (state.kp != null ? state.kp : 0) + 0.5) {
+    const when = fc.time.valueOf() <= Date.now() ? "now" : "around " + fmtTime(fc.time);
+    kpPhrase = "Kp forecast " + fc.kp.toFixed(1) + " " + when;
+  }
+  const parts = [kpPhrase];
   if (cp) parts.push(cp.text);
   const mp = moonPhrase();
   if (mp) parts.push(mp);
   let why = parts.join(", ") + ".";
-  if (cloudKilled && kp >= 4) why = "Kp " + kp.toFixed(1) + " but " + cp.text + " — the sky has other plans.";
+  if (cloudKilled && kp >= 4) why = kpPhrase + " but " + cp.text + " — the sky has other plans.";
   return { level, label: ["Low", "Possible", "Good", "Go now"][level], why };
 }
 function secondaryLine() {
@@ -754,10 +847,10 @@ function secondaryLine() {
       }
     }
   }
-  // Milky Way in prime months, moon permitting
-  const m = now.getMonth();
-  if ((m >= 3 && m <= 8) && state.moon && state.moon.fraction < 0.4) {
-    bits.push("Milky Way core well placed once it’s properly dark");
+  // Milky Way when the core rides high and the moon stays out of the way
+  const ct = coreTonight();
+  if (ct && ct.best && ct.best.alt > RAD * 30 && state.moon && state.moon.fraction < 0.4) {
+    bits.push("Milky Way core high toward the " + compass(ct.best.az) + " around " + fmtTime(new Date(ct.best.time)));
   }
   return bits.join(" · ");
 }
@@ -769,6 +862,7 @@ function renderHome() {
   el.textContent = v.label;
   el.className = "verdict " + (v.level < 0 ? "v-unknown" : ["v-low", "v-possible", "v-good", "v-go"][v.level]);
   document.getElementById("why").textContent = v.why;
+  document.getElementById("condLine").textContent = tempPhrase();
   document.getElementById("secondary").textContent = secondaryLine();
   const asof = document.getElementById("asof");
   if (state.kpTime) {
@@ -776,6 +870,39 @@ function renderHome() {
     asof.textContent = "Kp as of " + (mins < 90 ? mins + " min ago" : Math.round(mins / 60) + " h ago");
   } else asof.textContent = "";
   renderLocBar();
+  updateLogHint();
+}
+/* Temperature a couple of hours into darkness — the "do I bother" number. */
+function tempPhrase() {
+  if (!state.cloud || !state.cloud.temp || !state.night || !state.night.duskAstro) return "";
+  const target = new Date(state.night.duskAstro.valueOf() + 2 * 3600000);
+  let bi = -1, bd = Infinity;
+  state.cloud.times.forEach((t, i) => {
+    const d = Math.abs(t.valueOf() - target.valueOf());
+    if (d < bd) { bd = d; bi = i; }
+  });
+  if (bi < 0 || state.cloud.temp[bi] == null) return "";
+  const t = Math.round(state.cloud.temp[bi]);
+  const f = state.cloud.feels && state.cloud.feels[bi] != null ? Math.round(state.cloud.feels[bi]) : t;
+  let s = "Around " + t + "° out there once it’s dark";
+  if (f <= t - 3) s += ", feels like " + f + "°";
+  return s + ".";
+}
+/* Quiet recall of the last confirmed aurora in the log. */
+async function updateLogHint() {
+  try {
+    const entries = await dbAll();
+    const year = String(new Date().getFullYear());
+    const nights = entries.filter(e => e.date.startsWith(year) && e.sawIt !== "didnt-look").length;
+    const lastSaw = entries.filter(e => e.sawIt === "yes").sort((a, b) => b.date.localeCompare(a.date))[0];
+    const el = document.getElementById("logCardHint");
+    if (lastSaw) {
+      const d = new Date(lastSaw.date + "T12:00:00");
+      el.textContent = "Last aurora: " + d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    } else if (nights) {
+      el.textContent = nights + " night" + (nights === 1 ? "" : "s") + " this year";
+    } else el.textContent = "Nights out this year";
+  } catch {}
 }
 function renderLocBar(msg) {
   document.getElementById("locName").textContent = msg || state.loc.label;
@@ -806,7 +933,7 @@ function useMyLocation() {
     const name = await placeName(lat, lng);
     state.loc = { lat, lng, label: name || lat.toFixed(2) + "°, " + lng.toFixed(2) + "°" };
     const s = loadSettings(); s.homeLocation = state.loc; saveSettings(s);
-    localStorage.removeItem("nw-cache-cloud-" + lat.toFixed(2) + "-" + lng.toFixed(2));
+    localStorage.removeItem("nw-cache-cloud2-" + lat.toFixed(2) + "-" + lng.toFixed(2));
     refresh();
   }, () => {
     renderLocBar("Location unavailable — using " + state.loc.label.replace(" (default)", ""));
@@ -818,6 +945,11 @@ function renderAurora() {
   document.getElementById("kpNow").textContent = state.kp != null ? state.kp.toFixed(1) : "–";
   const upd = document.getElementById("kpUpdated");
   upd.textContent = state.kpTime ? "updated " + fmtTime(state.kpTime) : "no data — will retry";
+  const fc = kpTonight();
+  const fcEl = document.getElementById("kpForecastLine");
+  if (fc && fc.tag !== "observed") {
+    fcEl.textContent = "Tonight’s outlook: Kp " + fc.kp.toFixed(1) + " around " + fmtTime(fc.time) + " (NOAA forecast)";
+  } else fcEl.textContent = "";
   // sparkline
   const svg = document.getElementById("kpSpark");
   svg.innerHTML = "";
@@ -858,11 +990,20 @@ function renderAurora() {
     let idx = state.cloud.times.findIndex(t => t.valueOf() >= now - 1800000);
     if (idx < 0) idx = 0;
     cn.textContent = state.cloud.cover[idx] + "% cover now";
+    // each hour is a cloud that fills with the fraction of sky covered
+    const CLOUD_PATH = "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z";
     for (let i = idx; i < Math.min(idx + 6, state.cloud.times.length); i++) {
+      const cover = state.cloud.cover[i];
+      const fillH = 24 * cover / 100;
       const div = document.createElement("div");
       div.className = "cloudbar";
-      const h = Math.max(3, state.cloud.cover[i] * 0.5);
-      div.innerHTML = `<div class="bar" style="height:${h}px"></div><div class="lbl">${fmtTime(state.cloud.times[i]).replace(":00", "")}</div>`;
+      div.innerHTML =
+        `<svg class="cloudglyph" viewBox="0 0 24 24" role="img" aria-label="${cover}% cloud cover">` +
+        `<defs><clipPath id="cg${i}"><path d="${CLOUD_PATH}"/></clipPath></defs>` +
+        `<rect x="0" y="${(24 - fillH).toFixed(1)}" width="24" height="${fillH.toFixed(1)}" clip-path="url(#cg${i})"/>` +
+        `<path class="outline" d="${CLOUD_PATH}"/></svg>` +
+        `<div class="pct">${cover}%</div>` +
+        `<div class="lbl">${fmtTime(state.cloud.times[i]).replace(":00", "")}</div>`;
       bars.appendChild(div);
     }
   } else cn.textContent = "Cloud forecast unavailable.";
@@ -883,16 +1024,47 @@ function renderAurora() {
 }
 
 /* ---------------- render: sky ----------------------------------------- */
+/* Scan the core's altitude across tonight's dark window. */
+function coreTonight() {
+  if (!state.night) return null;
+  const dusk = state.night.duskAstro ? state.night.duskAstro.valueOf() : Date.now();
+  const dawn = state.night.dawnAstro ? state.night.dawnAstro.valueOf() : dusk + 8 * 3600000;
+  let best = null;
+  for (let t = dusk; t <= dawn; t += 15 * 60000) {
+    const p = coreAltAz(new Date(t), state.loc.lat, state.loc.lng);
+    if (!best || p.alt > best.alt) best = { alt: p.alt, az: p.az, time: t };
+  }
+  return { best, dusk, dawn };
+}
+function mwAssess() {
+  const ct = coreTonight();
+  if (!ct || !ct.best) return null;
+  const altDeg = ct.best.alt / RAD;
+  if (altDeg < 15) return { line: "", note: "The core stays too low tonight to be worth a special trip." };
+  const line = `From ${state.loc.label.replace(" (default)", "")} tonight: highest around ${fmtTime(new Date(ct.best.time))}, about ${Math.round(altDeg)}° up toward the ${compass(ct.best.az)}.`;
+  let score = 2;
+  const reasons = [];
+  const moonPct = state.moon ? Math.round(state.moon.fraction * 100) : 0;
+  const midDark = new Date((ct.dusk + ct.dawn) / 2);
+  const moonUp = moonAltitude(midDark, state.loc.lat, state.loc.lng) > 0;
+  if (state.moon && moonUp && state.moon.fraction > 0.6) { score = 0; reasons.push(`the ${moonPct}% moon will wash it out`); }
+  else if (state.moon && moonUp && state.moon.fraction > 0.35) { score = 1; reasons.push(`the ${moonPct}% moon will cost you the faint arms`); }
+  const pts = cloudDuringDark();
+  if (pts) {
+    const avg = pts.reduce((s, p) => s + p.cover, 0) / pts.length;
+    if (avg > 75) { score = 0; reasons.push("cloud has the sky"); }
+    else if (avg > 45) { score = Math.min(score, 1); reasons.push("patchy cloud"); }
+  }
+  const word = ["Poor", "Fair", "Good"][score];
+  const note = word + " chance tonight" + (reasons.length ? " — " + reasons.join(", and ") + "." : " — dark sky, low moon. Go look.");
+  return { line, note };
+}
 function renderSky() {
   const now = new Date();
   document.getElementById("mwText").textContent = MILKY_WAY[now.getMonth()];
-  const note = document.getElementById("mwMoonNote");
-  if (state.moon) {
-    const pct = Math.round(state.moon.fraction * 100);
-    note.textContent = pct < 20 ? "Moon is " + pct + "% — dark enough to see it properly."
-      : pct < 50 ? "Moon is " + pct + "% — the core will still show, fainter arms won’t."
-      : "Moon is " + pct + "% — moonlight will wash out most of it. Aim for moonset or another week.";
-  }
+  const a = mwAssess();
+  document.getElementById("mwTonight").textContent = a ? a.line : "";
+  document.getElementById("mwMoonNote").textContent = a ? a.note : "";
   const list = document.getElementById("showerList");
   list.innerHTML = "";
   const upcoming = METEOR_SHOWERS.map(s => {
@@ -900,7 +1072,7 @@ function renderSky() {
     if ((now - peak) / DAY_MS > 14) peak = new Date(now.getFullYear() + 1, s.m - 1, s.d);
     return { ...s, peak };
   }).sort((a, b) => a.peak - b.peak);
-  for (const s of upcoming) {
+  upcoming.forEach((s, i) => {
     const dd = (s.peak - now) / DAY_MS;
     const near = dd > -1.5 && dd < 3 && s.tas !== "not visible";
     const moonAtPeak = moonIllumination(s.peak).fraction;
@@ -912,9 +1084,41 @@ function renderSky() {
       `<span class="when">${s.peak.toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span></div>` +
       `<div class="sub">${s.note}</div>` +
       (alarm ? `<div class="alarm">Peaking now with a ${Math.round(moonAtPeak * 100)}% moon — worth setting an alarm.</div>`
-        : near ? `<div class="sub">Peaking now, but the moon is ${Math.round(moonAtPeak * 100)}% — it’ll cost you the faint ones.</div>` : "");
+        : near ? `<div class="sub">Peaking now, but the moon is ${Math.round(moonAtPeak * 100)}% — it’ll cost you the faint ones.</div>` : "") +
+      (s.tas !== "not visible" ? `<button class="btn small remind" data-remind="${i}">add reminder</button>` : "");
     list.appendChild(div);
-  }
+  });
+  list.querySelectorAll("[data-remind]").forEach(b => {
+    b.onclick = () => downloadShowerICS(upcoming[+b.dataset.remind]);
+  });
+}
+/* Calendar reminder — an .ics with an evening alert on the peak night.
+   No push, no server; the phone's calendar does the reminding. */
+function downloadShowerICS(s) {
+  const pad = n => String(n).padStart(2, "0");
+  const fmt = dt => dt.getFullYear() + pad(dt.getMonth() + 1) + pad(dt.getDate()) + "T" + pad(dt.getHours()) + pad(dt.getMinutes()) + "00";
+  const start = new Date(s.peak); start.setHours(22, 0, 0, 0);
+  const end = new Date(start.valueOf() + 4 * 3600000);
+  const esc = t => t.replace(/([,;])/g, "\\$1");
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Nightwatch//EN",
+    "BEGIN:VEVENT",
+    "UID:nightwatch-" + s.name.replace(/\W/g, "") + start.getFullYear() + "@nightwatch",
+    "DTSTAMP:" + fmt(new Date()),
+    "DTSTART:" + fmt(start),
+    "DTEND:" + fmt(end),
+    "SUMMARY:" + esc(s.name + " meteor shower peak"),
+    "DESCRIPTION:" + esc(s.note + " Check Nightwatch for cloud and moon on the night."),
+    "BEGIN:VALARM", "TRIGGER:-PT2H", "ACTION:DISPLAY",
+    "DESCRIPTION:" + esc(s.name + " peak tonight"), "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR"
+  ].join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = s.name.toLowerCase().replace(/\s+/g, "-") + "-" + start.getFullYear() + ".ics";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
 /* ---------------- render: spots ---------------------------------------- */
@@ -936,7 +1140,8 @@ function renderSpots() {
     div.innerHTML =
       `<div class="top"><span>${s.name}${s.south ? '<span class="tag">faces south</span>' : ""}</span>` +
       `<span class="dist">${Math.round(s.km)} km</span></div>` +
-      `<div class="sub"><span class="darkdots">${dots}</span> · ${s.note}</div>`;
+      `<div class="sub"><span class="darkdots">${dots}</span> · ${s.note}</div>` +
+      `<a class="dir" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank" rel="noopener">take me there ↗</a>`;
     list.appendChild(div);
   }
 }
@@ -992,8 +1197,7 @@ async function renderLog() {
   line.textContent = thisYear.length === 0
     ? "Nothing logged this year yet."
     : `This year: out on ${thisYear.length} night${thisYear.length === 1 ? "" : "s"}, aurora on ${saw}.`;
-  document.getElementById("logCardHint").textContent = thisYear.length
-    ? `${thisYear.length} night${thisYear.length === 1 ? "" : "s"} this year` : "Nights out this year";
+  updateLogHint();
   const list = document.getElementById("entryList");
   list.innerHTML = "";
   for (const e of entries) {
@@ -1108,6 +1312,33 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
+/* ---------------- install hint ------------------------------------------ */
+function wireInstallHint() {
+  const bar = document.getElementById("installHint");
+  const txt = document.getElementById("installText");
+  const btn = document.getElementById("installBtn");
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (localStorage.getItem("nw-install-dismissed") || standalone) return;
+  let deferredPrompt = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS) {
+    txt.textContent = "Keep it handy: tap Share, then “Add to Home Screen”.";
+    bar.classList.remove("hidden");
+  }
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    txt.textContent = "Install Nightwatch for quick access on dark nights.";
+    btn.classList.remove("hidden");
+    bar.classList.remove("hidden");
+  });
+  btn.onclick = () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; } };
+  document.getElementById("installDismiss").onclick = () => {
+    localStorage.setItem("nw-install-dismissed", "1");
+    bar.classList.add("hidden");
+  };
+}
+
 /* ---------------- night vision mode ------------------------------------ */
 function wireNightMode() {
   const btn = document.getElementById("nightToggle");
@@ -1132,6 +1363,7 @@ async function refresh() {
   state.moon = moonIllumination(now);
   const jobs = [
     fetchKp().catch(() => state.errors.push("kp")),
+    fetchKpForecast().catch(() => {}),
     fetchWind().catch(() => {}),
     fetchMag().catch(() => {}),
     fetchCloud().catch(() => state.errors.push("cloud"))
@@ -1158,6 +1390,7 @@ function boot() {
   }
   wireNightMode();
   wireForm();
+  wireInstallHint();
   route();
   refresh();
   setInterval(refresh, 10 * 60000);
