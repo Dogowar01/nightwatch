@@ -116,7 +116,30 @@ a{color:var(--ink);text-decoration:none}
 button{font-family:inherit}
 
 /* Tonight card */
-#verdictCard{padding:28px 22px}
+#verdictCard{padding:28px 22px;position:relative;overflow:hidden}
+#verdictCard>*:not(.vfx){position:relative;z-index:1}
+/* aurora curtains inside the card — intensity follows the verdict */
+.vfx{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.3;transition:opacity 1.2s ease}
+.vfx i{
+  position:absolute;bottom:-25%;width:38%;height:135%;
+  border-radius:50%;filter:blur(22px);transform-origin:bottom center;
+  background:linear-gradient(180deg,transparent 0%,rgba(99,242,172,.30) 45%,rgba(76,201,240,.14) 72%,transparent 100%);
+  animation:curtain 9s ease-in-out infinite alternate;
+}
+.vfx i:nth-child(1){left:0}
+.vfx i:nth-child(2){left:29%;height:120%;animation-delay:-3.2s;background:linear-gradient(180deg,transparent 0%,rgba(76,201,240,.22) 45%,rgba(157,123,255,.12) 72%,transparent 100%)}
+.vfx i:nth-child(3){left:60%;animation-delay:-6.1s}
+@keyframes curtain{
+  from{transform:skewX(-7deg) scaleY(.9);opacity:.55}
+  to{transform:skewX(6deg) scaleY(1.06);opacity:1}
+}
+#verdictCard[data-level="0"] .vfx{opacity:.14}
+#verdictCard[data-level="1"] .vfx{opacity:.35}
+#verdictCard[data-level="2"] .vfx{opacity:.6}
+#verdictCard[data-level="3"] .vfx{opacity:.95}
+#verdictCard[data-level="3"] .vfx i{animation-duration:5s}
+html.night .vfx{display:none}
+@media (prefers-reduced-motion:reduce){.vfx i{animation:none}}
 .verdict-label{font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
 .verdict{font-size:2.6rem;font-weight:700;line-height:1.1;margin-bottom:10px;letter-spacing:-.01em}
 .verdict.v-low{color:var(--ink-dim)}
@@ -167,10 +190,19 @@ html.night .spark polyline{stroke:var(--accent)}
 .spark text{fill:var(--ink-faint);font-size:9px}
 .cloudbars{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
 .cloudbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
-.cloudglyph{width:100%;max-width:44px;height:auto;display:block}
-.cloudglyph rect{fill:rgba(203,213,235,.65)}
-.cloudglyph .outline{fill:none;stroke:var(--ink-faint);stroke-width:1.4;stroke-linejoin:round}
+.cloudglyph{
+  width:100%;max-width:44px;height:auto;display:block;
+  filter:drop-shadow(0 3px 4px rgba(2,6,14,.55));
+  animation:cloudbob 6s ease-in-out infinite alternate;
+}
+.cloudbar:nth-child(2n) .cloudglyph{animation-delay:-3.1s}
+.cloudbar:nth-child(3n) .cloudglyph{animation-delay:-1.6s}
+@keyframes cloudbob{from{transform:translateY(0)}to{transform:translateY(-2.5px)}}
+.cloudglyph .outline{fill:none;stroke:var(--ink-faint);stroke-width:1.2;stroke-linejoin:round}
+html.night .cloudglyph{filter:none;animation:none}
 html.night .cloudglyph rect{fill:rgba(224,79,48,.4)}
+html.night .cloudglyph ellipse{display:none}
+@media (prefers-reduced-motion:reduce){.cloudglyph{animation:none}}
 .cloudbar .pct{font-size:.62rem;color:var(--ink-dim)}
 .cloudbar .lbl{font-size:.65rem;color:var(--ink-faint)}
 .note{color:var(--ink-faint);font-size:.8rem;margin-top:10px}
@@ -230,7 +262,7 @@ input[type=file]{color:var(--ink-faint);font-size:.85rem;margin:6px 0 8px}
 
 footer{color:var(--ink-faint);font-size:.72rem;text-align:center;padding-top:20px;line-height:1.7}
 footer a{color:var(--ink-faint);text-decoration:underline}
-.hidden{display:none}
+.hidden{display:none!important}
 .locbar{
   display:flex;align-items:center;gap:9px;width:100%;
   background:var(--card-2);border:1px solid var(--line);border-radius:14px;
@@ -281,6 +313,7 @@ details.explain p{color:var(--ink-dim);font-size:.82rem;margin-top:8px;line-heig
     <span class="locact" id="locAct">use my location</span>
   </button>
   <div class="card" id="verdictCard">
+    <div class="vfx" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="verdict-label">Aurora chance tonight</div>
     <div class="verdict v-unknown" id="verdict">Looking up…</div>
     <div class="why" id="why"></div>
@@ -861,6 +894,7 @@ function renderHome() {
   const el = document.getElementById("verdict");
   el.textContent = v.label;
   el.className = "verdict " + (v.level < 0 ? "v-unknown" : ["v-low", "v-possible", "v-good", "v-go"][v.level]);
+  document.getElementById("verdictCard").dataset.level = v.level;
   document.getElementById("why").textContent = v.why;
   document.getElementById("condLine").textContent = tempPhrase();
   document.getElementById("secondary").textContent = secondaryLine();
@@ -999,8 +1033,15 @@ function renderAurora() {
       div.className = "cloudbar";
       div.innerHTML =
         `<svg class="cloudglyph" viewBox="0 0 24 24" role="img" aria-label="${cover}% cloud cover">` +
-        `<defs><clipPath id="cg${i}"><path d="${CLOUD_PATH}"/></clipPath></defs>` +
-        `<rect x="0" y="${(24 - fillH).toFixed(1)}" width="24" height="${fillH.toFixed(1)}" clip-path="url(#cg${i})"/>` +
+        `<defs><clipPath id="cg${i}"><path d="${CLOUD_PATH}"/></clipPath>` +
+        `<linearGradient id="cf${i}" x1="0" y1="0" x2="0" y2="1">` +
+        `<stop offset="0" stop-color="#e8eefa" stop-opacity=".95"/>` +
+        `<stop offset=".55" stop-color="#aebdda" stop-opacity=".85"/>` +
+        `<stop offset="1" stop-color="#6d7fa3" stop-opacity=".8"/></linearGradient></defs>` +
+        `<g clip-path="url(#cg${i})">` +
+        `<rect x="0" y="${(24 - fillH).toFixed(1)}" width="24" height="${fillH.toFixed(1)}" fill="url(#cf${i})"/>` +
+        `<ellipse cx="9.5" cy="${(24 - fillH + 2).toFixed(1)}" rx="7" ry="2.4" fill="#fff" opacity=".22"/>` +
+        `</g>` +
         `<path class="outline" d="${CLOUD_PATH}"/></svg>` +
         `<div class="pct">${cover}%</div>` +
         `<div class="lbl">${fmtTime(state.cloud.times[i]).replace(":00", "")}</div>`;
