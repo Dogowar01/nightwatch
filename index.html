@@ -49,6 +49,20 @@ body{
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   -webkit-font-smoothing:antialiased;
 }
+.bg-photo{
+  position:fixed;inset:0;
+  background-image:url("background.png");
+  background-size:cover;
+  background-position:center;
+  z-index:-2;
+}
+.bg-overlay{
+  position:fixed;inset:0;
+  background:linear-gradient(180deg, rgba(10,14,23,.55) 0%, rgba(10,14,23,.72) 45%, rgba(10,14,23,.92) 100%);
+  z-index:-1;
+}
+html.night .bg-photo{filter:grayscale(1) sepia(1) hue-rotate(-35deg) saturate(2.2) brightness(.55)}
+html.night .bg-overlay{background:linear-gradient(180deg, rgba(4,3,2,.6) 0%, rgba(4,3,2,.78) 45%, rgba(4,3,2,.95) 100%)}
 .wrap{max-width:560px;margin:0 auto;padding:16px 16px 48px}
 header{display:flex;align-items:baseline;justify-content:space-between;padding:10px 2px 18px}
 header h1{font-size:1.05rem;font-weight:600;letter-spacing:.14em;text-transform:lowercase;color:var(--ink)}
@@ -167,6 +181,8 @@ footer a{color:var(--ink-faint);text-decoration:underline}
 </style>
 </head>
 <body>
+<div class="bg-photo"></div>
+<div class="bg-overlay"></div>
 <div class="wrap">
 <header>
   <h1>nightwatch <span>· tasmania</span></h1>
