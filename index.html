@@ -232,8 +232,17 @@ input[type=file]{color:var(--ink-faint);font-size:.85rem;margin:6px 0 8px}
 footer{color:var(--ink-faint);font-size:.72rem;text-align:center;padding-top:20px;line-height:1.7}
 footer a{color:var(--ink-faint);text-decoration:underline}
 .hidden{display:none}
-.locline{color:var(--ink-faint);font-size:.78rem;text-align:center;margin-bottom:12px}
-.locline button{background:none;border:none;color:var(--ink-dim);text-decoration:underline;cursor:pointer;font-size:.78rem}
+.locbar{
+  display:flex;align-items:center;gap:9px;width:100%;
+  background:var(--card-2);border:1px solid var(--line);border-radius:14px;
+  padding:11px 15px;margin-bottom:14px;color:var(--ink-dim);font-size:.86rem;
+  cursor:pointer;font-family:inherit;text-align:left;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.locbar svg{flex:none;opacity:.85;color:var(--accent-2)}
+.locbar .locname{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.locbar .locact{margin-left:auto;color:var(--ink-faint);font-size:.78rem;text-decoration:underline;white-space:nowrap}
+.locbar:active{background:var(--card)}
 </style>
 </head>
 <body>
@@ -248,6 +257,11 @@ footer a{color:var(--ink-faint);text-decoration:underline}
 
 <!-- ============ HOME ============ -->
 <section id="view-home">
+  <button class="locbar" id="locBar" title="Set your location">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span class="locname" id="locName">Hobart (default)</span>
+    <span class="locact" id="locAct">use my location</span>
+  </button>
   <div class="card" id="verdictCard">
     <div class="verdict-label">Aurora chance tonight</div>
     <div class="verdict v-unknown" id="verdict">Looking up…</div>
@@ -261,7 +275,6 @@ footer a{color:var(--ink-faint);text-decoration:underline}
     <a class="navcard" href="#/spots">Dark sky spots<small>Where to stand</small></a>
     <a class="navcard" href="#/log">Your log<small id="logCardHint">Nights out this year</small></a>
   </div>
-  <div class="locline" id="locLine"></div>
 </section>
 
 <!-- ============ AURORA DETAIL ============ -->
@@ -283,7 +296,7 @@ footer a{color:var(--ink-faint);text-decoration:underline}
     <h2>Cloud</h2>
     <div class="sentence" id="cloudNow">–</div>
     <div class="cloudbars" id="cloudBars"></div>
-    <div class="note">Next six hours over your location (Open-Meteo).</div>
+    <div class="note" id="cloudNote">Next six hours over your location (Open-Meteo).</div>
   </div>
   <div class="card">
     <h2>Darkness &amp; moon</h2>
@@ -762,23 +775,41 @@ function renderHome() {
     const mins = Math.round((Date.now() - state.kpTime.valueOf()) / 60000);
     asof.textContent = "Kp as of " + (mins < 90 ? mins + " min ago" : Math.round(mins / 60) + " h ago");
   } else asof.textContent = "";
-  const loc = document.getElementById("locLine");
-  loc.innerHTML = "";
-  loc.append(state.loc.label + " · ");
-  const btn = document.createElement("button");
-  btn.textContent = "use my location";
-  btn.onclick = useMyLocation;
-  loc.appendChild(btn);
+  renderLocBar();
+}
+function renderLocBar(msg) {
+  document.getElementById("locName").textContent = msg || state.loc.label;
+  document.getElementById("locAct").textContent =
+    state.loc.label === DEFAULT_LOC.label ? "use my location" : "update";
+}
+/* Reverse geocode to a place name — free, keyless, fails quiet.
+   Nominatim (OSM) first, BigDataCloud as fallback. Only called when the
+   user sets their location, so volume is well within usage policies. */
+async function placeName(lat, lng) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+    const a = (await r.json()).address || {};
+    const n = a.suburb || a.town || a.village || a.city || a.municipality || a.county;
+    if (n) return n;
+  } catch {}
+  try {
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+    const d = await r.json();
+    return d.locality || d.city || d.principalSubdivision || null;
+  } catch { return null; }
 }
 function useMyLocation() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    state.loc = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: "your location" };
+  if (!navigator.geolocation) { renderLocBar("Location not available on this device"); return; }
+  renderLocBar("Finding you…");
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    const name = await placeName(lat, lng);
+    state.loc = { lat, lng, label: name || lat.toFixed(2) + "°, " + lng.toFixed(2) + "°" };
     const s = loadSettings(); s.homeLocation = state.loc; saveSettings(s);
-    localStorage.removeItem("nw-cache-cloud-" + state.loc.lat.toFixed(2) + "-" + state.loc.lng.toFixed(2));
+    localStorage.removeItem("nw-cache-cloud-" + lat.toFixed(2) + "-" + lng.toFixed(2));
     refresh();
   }, () => {
-    document.getElementById("locLine").insertAdjacentText("afterbegin", "Location unavailable — using Hobart. ");
+    renderLocBar("Location unavailable — using " + state.loc.label.replace(" (default)", ""));
   });
 }
 
@@ -835,6 +866,8 @@ function renderAurora() {
       bars.appendChild(div);
     }
   } else cn.textContent = "Cloud forecast unavailable.";
+  document.getElementById("cloudNote").textContent =
+    "Next six hours over " + state.loc.label.replace(" (default)", "") + " (Open-Meteo).";
   // darkness & moon
   const n = state.night, mi = state.moon;
   const kv = document.getElementById("darkKv");
@@ -1112,6 +1145,17 @@ async function refresh() {
 function boot() {
   const s = loadSettings();
   state.loc = s.homeLocation || DEFAULT_LOC;
+  document.getElementById("locBar").onclick = useMyLocation;
+  // upgrade locations saved before reverse geocoding existed
+  if (state.loc.label === "your location") {
+    placeName(state.loc.lat, state.loc.lng).then(n => {
+      if (n) {
+        state.loc.label = n;
+        const s2 = loadSettings(); s2.homeLocation = state.loc; saveSettings(s2);
+        renderLocBar();
+      }
+    });
+  }
   wireNightMode();
   wireForm();
   route();
