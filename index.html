@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Is tonight worth going outside? A quiet night-sky companion for Tasmania — aurora, Milky Way, meteor showers and dark places to stand.">
+<meta name="theme-color" content="#0a0e17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nightwatch">
+<title>Nightwatch</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  --bg:#0a0e17;
+  --card:#101623;
+  --card-2:#0d1220;
+  --line:#1b2334;
+  --ink:#c7cedd;
+  --ink-dim:#8b94a8;
+  --ink-faint:#5c6579;
+  --accent:#5ce8a4;
+  --accent-dim:rgba(92,232,164,.14);
+  --danger:#c96a5a;
+  --radius:14px;
+}
+html.night{
+  --bg:#040302;
+  --card:#0e0605;
+  --card-2:#0b0504;
+  --line:#241009;
+  --ink:#c2604a;
+  --ink-dim:#8c4534;
+  --ink-faint:#5e2f24;
+  --accent:#e04f30;
+  --accent-dim:rgba(224,79,48,.14);
+  --danger:#c2604a;
+}
+html.night img{filter:grayscale(1) sepia(1) hue-rotate(-35deg) saturate(2.2) brightness(.7)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);
+  min-height:100vh;line-height:1.5;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 48px}
+header{display:flex;align-items:baseline;justify-content:space-between;padding:10px 2px 18px}
+header h1{font-size:1.05rem;font-weight:600;letter-spacing:.14em;text-transform:lowercase;color:var(--ink)}
+header h1 span{color:var(--ink-faint);font-weight:400}
+#nightToggle{
+  background:none;border:1px solid var(--line);color:var(--ink-dim);
+  border-radius:20px;padding:4px 12px;font-size:.78rem;cursor:pointer;font-family:inherit;
+}
+#nightToggle:active{background:var(--card)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:12px}
+.card h2{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+a{color:var(--ink);text-decoration:none}
+button{font-family:inherit}
+
+/* Tonight card */
+#verdictCard{padding:24px 20px}
+.verdict-label{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.verdict{font-size:2rem;font-weight:650;line-height:1.15;margin-bottom:8px}
+.verdict.v-low{color:var(--ink-dim)}
+.verdict.v-possible{color:var(--ink)}
+.verdict.v-good{color:var(--ink)}
+.verdict.v-go{color:var(--accent);text-shadow:0 0 24px var(--accent-dim)}
+.verdict.v-unknown{color:var(--ink-faint);font-size:1.4rem}
+.why{color:var(--ink-dim);font-size:.95rem}
+.secondary-line{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink-dim);font-size:.88rem}
+.secondary-line:empty{display:none}
+.asof{margin-top:10px;font-size:.75rem;color:var(--ink-faint)}
+
+/* nav cards */
+.navlist{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.navcard{
+  display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;color:var(--ink);font-size:.92rem;font-weight:500;
+}
+.navcard small{display:block;color:var(--ink-faint);font-weight:400;font-size:.78rem;margin-top:2px}
+.navcard:active{background:var(--card-2)}
+
+/* sub-views */
+.back{display:inline-block;color:var(--ink-faint);font-size:.85rem;margin-bottom:14px}
+.back:before{content:"‹ "}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--ink-dim)}
+.kv .v{text-align:right}
+.bignum{font-size:2.4rem;font-weight:650;line-height:1.1}
+.subnum{color:var(--ink-faint);font-size:.8rem}
+.sentence{font-size:1.02rem;margin-bottom:6px}
+.numbers{color:var(--ink-faint);font-size:.82rem}
+.spark{width:100%;height:56px;margin-top:10px}
+.spark polyline{fill:none;stroke:var(--ink-dim);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.spark .axis{stroke:var(--line);stroke-width:1}
+.spark text{fill:var(--ink-faint);font-size:9px}
+.cloudbars{display:flex;gap:6px;align-items:flex-end;height:64px;margin-top:10px}
+.cloudbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.cloudbar .bar{width:100%;background:var(--line);border-radius:3px;min-height:2px}
+.cloudbar .lbl{font-size:.65rem;color:var(--ink-faint)}
+.note{color:var(--ink-faint);font-size:.8rem;margin-top:10px}
+.quiet-error{color:var(--ink-faint);font-size:.85rem;font-style:italic}
+
+/* log */
+.seasonline{color:var(--ink-dim);font-size:.92rem;margin-bottom:14px}
+.entry{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.entry:last-child{border-bottom:none}
+.entry .dot{width:10px;height:10px;border-radius:50%;margin-top:7px;flex:none;background:var(--ink-faint)}
+.entry.saw .dot{background:var(--accent)}
+.entry .meta{flex:1;min-width:0}
+.entry .d{font-size:.92rem}
+.entry .sub{color:var(--ink-faint);font-size:.8rem}
+.entry img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex:none}
+.btn{
+  display:inline-block;background:var(--card-2);border:1px solid var(--line);color:var(--ink);
+  border-radius:10px;padding:10px 18px;font-size:.92rem;cursor:pointer;
+}
+.btn.primary{border-color:var(--ink-faint)}
+.btn.small{padding:5px 12px;font-size:.8rem;color:var(--ink-dim)}
+.btn:active{background:var(--line)}
+.btnrow{display:flex;gap:10px;margin-top:16px}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.seg button{
+  background:var(--card-2);border:1px solid var(--line);color:var(--ink-dim);
+  border-radius:10px;padding:8px 14px;font-size:.88rem;cursor:pointer;
+}
+.seg button.on{border-color:var(--ink-dim);color:var(--ink);background:var(--line)}
+label.f{display:block;font-size:.8rem;color:var(--ink-faint);letter-spacing:.05em;text-transform:uppercase;margin-top:6px}
+input[type=date],textarea{
+  width:100%;background:var(--card-2);border:1px solid var(--line);color:var(--ink);
+  border-radius:10px;padding:9px 12px;font-size:.92rem;font-family:inherit;margin:6px 0 8px;
+  color-scheme:dark;
+}
+textarea{resize:vertical;min-height:60px}
+input[type=file]{color:var(--ink-faint);font-size:.85rem;margin:6px 0 8px}
+#photoPreview{max-width:120px;border-radius:10px;display:block;margin:4px 0}
+
+/* spots */
+.spot{padding:12px 0;border-bottom:1px solid var(--line)}
+.spot:last-child{border-bottom:none}
+.spot .top{display:flex;justify-content:space-between;gap:10px;font-size:.95rem}
+.spot .dist{color:var(--ink-faint);font-size:.82rem;white-space:nowrap}
+.spot .sub{color:var(--ink-faint);font-size:.82rem;margin-top:2px}
+.darkdots{letter-spacing:2px;color:var(--ink-dim);font-size:.7rem}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:.7rem;color:var(--ink-faint);margin-left:6px;vertical-align:1px}
+
+/* sky */
+.shower{padding:12px 0;border-bottom:1px solid var(--line)}
+.shower:last-child{border-bottom:none}
+.shower .top{display:flex;justify-content:space-between;gap:10px;font-size:.95rem}
+.shower .when{color:var(--ink-faint);font-size:.82rem;white-space:nowrap}
+.shower .sub{color:var(--ink-faint);font-size:.82rem;margin-top:2px}
+.alarm{color:var(--accent);font-size:.78rem}
+
+footer{color:var(--ink-faint);font-size:.72rem;text-align:center;padding-top:20px;line-height:1.7}
+footer a{color:var(--ink-faint);text-decoration:underline}
+.hidden{display:none}
+.locline{color:var(--ink-faint);font-size:.78rem;text-align:center;margin-bottom:12px}
+.locline button{background:none;border:none;color:var(--ink-dim);text-decoration:underline;cursor:pointer;font-size:.78rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>nightwatch <span>· tasmania</span></h1>
+  <button id="nightToggle" title="Red night-vision mode">night vision</button>
+</header>
+
+<!-- ============ HOME ============ -->
+<section id="view-home">
+  <div class="card" id="verdictCard">
+    <div class="verdict-label">Aurora chance tonight</div>
+    <div class="verdict v-unknown" id="verdict">Looking up…</div>
+    <div class="why" id="why"></div>
+    <div class="secondary-line" id="secondary"></div>
+    <div class="asof" id="asof"></div>
+  </div>
+  <div class="navlist">
+    <a class="navcard" href="#/aurora">Aurora detail<small>Kp, wind, cloud, moon</small></a>
+    <a class="navcard" href="#/sky">Milky Way &amp; meteors<small>What else is up</small></a>
+    <a class="navcard" href="#/spots">Dark sky spots<small>Where to stand</small></a>
+    <a class="navcard" href="#/log">Your log<small id="logCardHint">Nights out this year</small></a>
+  </div>
+  <div class="locline" id="locLine"></div>
+</section>
+
+<!-- ============ AURORA DETAIL ============ -->
+<section id="view-aurora" class="hidden">
+  <a class="back" href="#/">Tonight</a>
+  <div class="card">
+    <h2>Kp index</h2>
+    <div class="bignum" id="kpNow">–</div>
+    <div class="subnum" id="kpUpdated"></div>
+    <svg class="spark" id="kpSpark" viewBox="0 0 300 56" preserveAspectRatio="none" aria-label="Kp over the last 24 hours"></svg>
+    <div class="note">Last 24 hours, planetary Kp (NOAA). Tasmania usually needs Kp 5+ for a show, Kp 4 for a camera glow on the southern horizon.</div>
+  </div>
+  <div class="card">
+    <h2>Solar wind</h2>
+    <div class="sentence" id="windSentence">Waiting on the feed…</div>
+    <div class="numbers" id="windNumbers"></div>
+  </div>
+  <div class="card">
+    <h2>Cloud</h2>
+    <div class="sentence" id="cloudNow">–</div>
+    <div class="cloudbars" id="cloudBars"></div>
+    <div class="note">Next six hours over your location (Open-Meteo).</div>
+  </div>
+  <div class="card">
+    <h2>Darkness &amp; moon</h2>
+    <div id="darkKv"></div>
+  </div>
+</section>
+
+<!-- ============ SKY (Milky Way + meteors) ============ -->
+<section id="view-sky" class="hidden">
+  <a class="back" href="#/">Tonight</a>
+  <div class="card">
+    <h2>Milky Way core</h2>
+    <div class="sentence" id="mwText"></div>
+    <div class="note" id="mwMoonNote"></div>
+  </div>
+  <div class="card">
+    <h2>Meteor showers</h2>
+    <div id="showerList"></div>
+    <div class="note">Peak dates shift by a day either side year to year. Rates assume a dark sky and some patience.</div>
+  </div>
+</section>
+
+<!-- ============ SPOTS ============ -->
+<section id="view-spots" class="hidden">
+  <a class="back" href="#/">Tonight</a>
+  <div class="card">
+    <h2>Dark sky spots</h2>
+    <div id="spotList"></div>
+    <div class="note">A starter list of twenty-odd real places — pins are approximate and notes are drafts. Darker dots mean darker sky. “Faces south” matters for aurora; anywhere dark works for the Milky Way.</div>
+  </div>
+</section>
+
+<!-- ============ LOG ============ -->
+<section id="view-log" class="hidden">
+  <a class="back" href="#/">Tonight</a>
+  <div class="card">
+    <h2>Your sightings log</h2>
+    <div class="seasonline" id="seasonLine"></div>
+    <button class="btn primary" id="newEntryBtn">Log tonight</button>
+    <div id="entryList" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- ============ LOG ENTRY FORM ============ -->
+<section id="view-entry" class="hidden">
+  <a class="back" href="#/log">Log</a>
+  <div class="card">
+    <h2>Log a night</h2>
+    <label class="f">Date</label>
+    <input type="date" id="fDate">
+    <label class="f">Did you see it?</label>
+    <div class="seg" id="fSaw" data-value="">
+      <button data-v="yes">Saw it</button>
+      <button data-v="no">Went out, nothing</button>
+      <button data-v="didnt-look">Didn’t look</button>
+    </div>
+    <div id="sawFields" class="hidden">
+      <label class="f">Strength</label>
+      <div class="seg" id="fStrength" data-value="">
+        <button data-v="glow">Glow</button>
+        <button data-v="pillars">Pillars</button>
+        <button data-v="dancing">Dancing</button>
+      </div>
+      <label class="f">Colour</label>
+      <div class="seg" id="fColour" data-value="">
+        <button data-v="green">Green</button>
+        <button data-v="red">Red</button>
+        <button data-v="purple">Purple</button>
+        <button data-v="pale">Pale / grey</button>
+      </div>
+      <label class="f">Direction</label>
+      <div class="seg" id="fDirection" data-value="">
+        <button data-v="S">S</button>
+        <button data-v="SE">SE</button>
+        <button data-v="SW">SW</button>
+        <button data-v="overhead">Overhead</button>
+      </div>
+      <label class="f">Photo (stays on this device)</label>
+      <input type="file" id="fPhoto" accept="image/*">
+      <img id="photoPreview" class="hidden" alt="">
+    </div>
+    <label class="f">Note</label>
+    <textarea id="fNote" placeholder="Where you were, who was there, anything worth remembering."></textarea>
+    <div class="btnrow">
+      <button class="btn primary" id="saveEntryBtn">Save</button>
+      <button class="btn" id="cancelEntryBtn">Cancel</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Space weather: NOAA SWPC · Weather: Open-Meteo · Sun &amp; moon computed on this device.<br>
+  Your log never leaves this device. A Signal9 app.
+</footer>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Nightwatch — single-file night sky companion for Tasmania.
+   No build step, no backend. Astronomy computed locally; Kp and cloud
+   fetched client-side from NOAA SWPC and Open-Meteo.
+   ===================================================================== */
+
+/* ---------------- astronomy (sun + moon, Meeus-style low precision) -- */
+const RAD = Math.PI / 180;
+const DAY_MS = 86400000, J1970 = 2440588, J2000 = 2451545;
+const toDays = d => d.valueOf() / DAY_MS - 0.5 + J1970 - J2000;
+const OBLIQUITY = RAD * 23.4397;
+
+function rightAscension(l, b) {
+  return Math.atan2(Math.sin(l) * Math.cos(OBLIQUITY) - Math.tan(b) * Math.sin(OBLIQUITY), Math.cos(l));
+}
+function declination(l, b) {
+  return Math.asin(Math.sin(b) * Math.cos(OBLIQUITY) + Math.cos(b) * Math.sin(OBLIQUITY) * Math.sin(l));
+}
+function siderealTime(d, lw) { return RAD * (280.16 + 360.9856235 * d) - lw; }
+function altitudeOf(H, phi, dec) {
+  return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+}
+function sunCoords(d) {
+  const M = RAD * (357.5291 + 0.98560028 * d);
+  const C = RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+  const L = M + C + RAD * 102.9372 + Math.PI;
+  return { dec: declination(L, 0), ra: rightAscension(L, 0) };
+}
+function moonCoords(d) {
+  const L = RAD * (218.316 + 13.176396 * d);
+  const M = RAD * (134.963 + 13.064993 * d);
+  const F = RAD * (93.272 + 13.229350 * d);
+  const l = L + RAD * 6.289 * Math.sin(M);
+  const b = RAD * 5.128 * Math.sin(F);
+  const dt = 385001 - 20905 * Math.cos(M);
+  return { ra: rightAscension(l, b), dec: declination(l, b), dist: dt };
+}
+function sunAltitude(date, lat, lng) {
+  const lw = RAD * -lng, phi = RAD * lat, d = toDays(date), c = sunCoords(d);
+  return altitudeOf(siderealTime(d, lw) - c.ra, phi, c.dec);
+}
+function moonAltitude(date, lat, lng) {
+  const lw = RAD * -lng, phi = RAD * lat, d = toDays(date), c = moonCoords(d);
+  return altitudeOf(siderealTime(d, lw) - c.ra, phi, c.dec);
+}
+function moonIllumination(date) {
+  const d = toDays(date), s = sunCoords(d), m = moonCoords(d);
+  const sdist = 149598000;
+  const phi = Math.acos(Math.sin(s.dec) * Math.sin(m.dec) +
+    Math.cos(s.dec) * Math.cos(m.dec) * Math.cos(s.ra - m.ra));
+  const inc = Math.atan2(sdist * Math.sin(phi), m.dist - sdist * Math.cos(phi));
+  const fraction = (1 + Math.cos(inc)) / 2;
+  const tomorrow = toDays(new Date(date.valueOf() + DAY_MS));
+  const s2 = sunCoords(tomorrow), m2 = moonCoords(tomorrow);
+  const phi2 = Math.acos(Math.sin(s2.dec) * Math.sin(m2.dec) +
+    Math.cos(s2.dec) * Math.cos(m2.dec) * Math.cos(s2.ra - m2.ra));
+  const inc2 = Math.atan2(sdist * Math.sin(phi2), m2.dist - sdist * Math.cos(phi2));
+  const waxing = ((1 + Math.cos(inc2)) / 2) > fraction;
+  return { fraction, waxing };
+}
+/* Find times where altFn crosses targetAlt between t0 and t1.
+   Returns [{time, rising}] — rising true when climbing through the target. */
+function findCrossings(altFn, targetAlt, t0, t1, stepMin) {
+  const out = [];
+  const step = (stepMin || 10) * 60000;
+  let prevT = t0, prevA = altFn(new Date(t0)) - targetAlt;
+  for (let t = t0 + step; t <= t1; t += step) {
+    const a = altFn(new Date(t)) - targetAlt;
+    if ((prevA <= 0 && a > 0) || (prevA > 0 && a <= 0)) {
+      let lo = prevT, hi = t;
+      for (let i = 0; i < 20; i++) {
+        const mid = (lo + hi) / 2;
+        const am = altFn(new Date(mid)) - targetAlt;
+        if ((prevA <= 0 && am > 0) || (prevA > 0 && am <= 0)) hi = mid; else lo = mid;
+      }
+      out.push({ time: new Date((lo + hi) / 2), rising: prevA <= 0 });
+    }
+    prevT = t; prevA = a;
+  }
+  return out;
+}
+/* Tonight's key times: from local noon today to local noon tomorrow. */
+function nightTimes(now, lat, lng) {
+  const noon = new Date(now); noon.setHours(12, 0, 0, 0);
+  if (now.getHours() < 12) noon.setDate(noon.getDate() - 1);
+  const t0 = noon.valueOf(), t1 = t0 + DAY_MS;
+  const sunFn = t => sunAltitude(t, lat, lng);
+  const moonFn = t => moonAltitude(t, lat, lng);
+  const setRise = findCrossings(sunFn, RAD * -0.833, t0, t1, 10);
+  const astro = findCrossings(sunFn, RAD * -18, t0, t1, 10);
+  const moonEv = findCrossings(moonFn, RAD * 0.133, t0, t1, 10);
+  return {
+    sunset: (setRise.find(c => !c.rising) || {}).time || null,
+    sunrise: (setRise.find(c => c.rising) || {}).time || null,
+    duskAstro: (astro.find(c => !c.rising) || {}).time || null,
+    dawnAstro: (astro.find(c => c.rising) || {}).time || null,
+    moonset: (moonEv.find(c => !c.rising) || {}).time || null,
+    moonrise: (moonEv.find(c => c.rising) || {}).time || null,
+    windowStart: t0, windowEnd: t1
+  };
+}
+
+/* ---------------- static data ---------------------------------------- */
+const DEFAULT_LOC = { lat: -42.88, lng: 147.33, label: "Hobart (default)" };
+
+const DARK_SKY_SPOTS = [
+  { name: "Goat Bluff Lookout, South Arm", lat: -43.045, lng: 147.437, dark: 3, south: true,  note: "Clifftop carpark looking straight down the Southern Ocean; the classic quick run from Hobart." },
+  { name: "Clifton Beach", lat: -42.992, lng: 147.531, dark: 3, south: true,  note: "Long south-facing beach; park at the surf club end and walk away from the lights." },
+  { name: "Carlton Beach", lat: -42.877, lng: 147.632, dark: 3, south: true,  note: "Wide beach with a clean southern horizon; dunes hide most of the carpark glow." },
+  { name: "Mortimer Bay, Sandford", lat: -42.930, lng: 147.474, dark: 3, south: true,  note: "Sheltered bay 25 minutes from town; walk a little past the trees at the carpark." },
+  { name: "Tinderbox lookout", lat: -43.056, lng: 147.334, dark: 3, south: true,  note: "Over the channel toward Bruny; some Blackmans Bay glow behind you." },
+  { name: "Randalls Bay", lat: -43.240, lng: 147.103, dark: 4, south: true,  note: "Quiet Huon beach with dark southern water; gravel carpark right by the sand." },
+  { name: "Verona Sands", lat: -43.203, lng: 147.163, dark: 4, south: true,  note: "Small settlement, very little light, facing the channel mouth." },
+  { name: "The Neck, Bruny Island", lat: -43.272, lng: 147.350, dark: 4, south: true,  note: "Isthmus lookout, genuinely dark — mind the nesting shearwaters and the last ferry." },
+  { name: "Cloudy Bay, Bruny Island", lat: -43.438, lng: 147.239, dark: 5, south: true,  note: "About as dark and south-facing as a day trip gets; rough gravel road in." },
+  { name: "Cockle Creek", lat: -43.584, lng: 146.892, dark: 5, south: true,  note: "End of the southernmost road in the country. Superb sky, no facilities, long drive." },
+  { name: "kunanyi / Mt Wellington pinnacle", lat: -42.896, lng: 147.236, dark: 3, south: false, note: "Sometimes above the low cloud. Brutal wind chill; the road closes in ice and snow." },
+  { name: "Seven Mile Beach", lat: -42.861, lng: 147.508, dark: 2, south: true,  note: "Handy and open, but airport and suburb glow — a quick-look spot, not a dark-sky night." },
+  { name: "Park Beach, Dodges Ferry", lat: -42.852, lng: 147.620, dark: 3, south: true,  note: "Easy beach access east of the airport glow." },
+  { name: "Marion Bay", lat: -42.810, lng: 147.918, dark: 4, south: true,  note: "Dark beach with a clean southern horizon; soft sand near the entrance." },
+  { name: "Ross, Midlands", lat: -42.030, lng: 147.492, dark: 4, south: false, note: "Inland darkness away from coastal weather; the bridge end of town is darkest." },
+  { name: "Tunbridge", lat: -42.131, lng: 147.425, dark: 4, south: false, note: "Midlands village, big open horizons — pull well off the highway." },
+  { name: "Great Lake, Miena", lat: -41.988, lng: 146.722, dark: 5, south: false, note: "Central Plateau altitude and clear air; freezing most of the year, dress for it." },
+  { name: "Friendly Beaches, Freycinet", lat: -41.994, lng: 148.281, dark: 4, south: false, note: "East coast dark-sky favourite; sandy tracks from the campground." },
+  { name: "Spiky Beach, Swansea", lat: -42.164, lng: 148.066, dark: 3, south: false, note: "Easy pull-in south of town, looking over Great Oyster Bay." },
+  { name: "Bakers Beach, Narawntapu NP", lat: -41.157, lng: 146.598, dark: 4, south: false, note: "North-facing — better for Milky Way than aurora. Check park gate hours." },
+  { name: "Low Head", lat: -41.063, lng: 146.789, dark: 3, south: false, note: "Lighthouse reserve on the north coast; the aurora sits behind you here." },
+  { name: "Ocean Beach, Strahan", lat: -42.161, lng: 145.271, dark: 4, south: true,  note: "West coast horizon with nothing to Argentina; the weather is the gamble." }
+];
+
+/* Peak dates as month/day; recur annually. Ratings are from Tasmania. */
+const METEOR_SHOWERS = [
+  { name: "Alpha Centaurids", m: 2, d: 8,  zhr: 6,   tas: "good",       note: "A modest summer shower with the radiant high in the southern sky after midnight." },
+  { name: "Lyrids",           m: 4, d: 22, zhr: 18,  tas: "fair",       note: "Radiant sits low from Tasmania; best in the hour before dawn." },
+  { name: "Eta Aquariids",    m: 5, d: 6,  zhr: 50,  tas: "excellent",  note: "Halley’s Comet dust. One of the best southern showers — set the alarm for pre-dawn." },
+  { name: "Southern Delta Aquariids", m: 7, d: 30, zhr: 25, tas: "good", note: "Steady rather than spectacular; after midnight, radiant nicely high." },
+  { name: "Perseids",         m: 8, d: 12, zhr: 100, tas: "not visible", note: "The famous northern show — its radiant never rises from Tasmania. Sit this one out." },
+  { name: "Orionids",         m: 10, d: 21, zhr: 20, tas: "good",       note: "More Halley dust; pre-dawn hours, radiant in the north." },
+  { name: "Leonids",          m: 11, d: 17, zhr: 15, tas: "fair",       note: "Modest most years; pre-dawn." },
+  { name: "Geminids",         m: 12, d: 14, zhr: 150, tas: "excellent", note: "The best shower of the year from Tasmania. Radiant up by late evening, good until dawn." }
+];
+
+/* Milky Way core (Sagittarius) from ~43°S, month by month. */
+const MILKY_WAY = [
+  "The core returns to the pre-dawn sky late this month, rising in the south-east before first light.",
+  "The core is in the pre-dawn hours — up from around 2–3am for early risers.",
+  "The core rises around midnight and stands high before dawn.",
+  "The core is up from mid-evening and high through the small hours — the season is properly open.",
+  "The core rises in the early evening and arcs overhead — prime months begin.",
+  "The core is overhead through the evening. As good as it gets.",
+  "The core is high in the evening sky — the best of the year, straight overhead by mid-evening.",
+  "The core is overhead at dusk and sinks west late — still prime, catch it earlier each week.",
+  "The core stands in the west at dusk and sets before midnight — good early, gone late.",
+  "The core sits low in the west after dark and slips away — the season is closing.",
+  "The core is lost to twilight this month. The Magellanic Clouds and the southern sky carry the night.",
+  "No core this month — it sits behind the sun. Dark-sky nights still have the Clouds and summer showers."
+];
+
+/* ---------------- state ---------------------------------------------- */
+const state = {
+  loc: null,
+  kp: null, kpTime: null, kpSeries: [],
+  wind: null,   // {speed, density, time}
+  mag: null,    // {bz, bt, time}
+  cloud: null,  // {times:[Date], cover:[num]}
+  night: null,  // nightTimes()
+  moon: null,   // moonIllumination()
+  fetchedAt: null,
+  errors: []
+};
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem("nw-settings") || "{}"); } catch { return {}; }
+}
+function saveSettings(s) { localStorage.setItem("nw-settings", JSON.stringify(s)); }
+
+/* ---------------- fetch layer (cache in localStorage, fail quiet) ---- */
+async function cachedFetch(key, url, maxAgeMin) {
+  const ck = "nw-cache-" + key;
+  try {
+    const cached = JSON.parse(localStorage.getItem(ck) || "null");
+    if (cached && Date.now() - cached.t < maxAgeMin * 60000) return cached.data;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    try { localStorage.setItem(ck, JSON.stringify({ t: Date.now(), data })); } catch {}
+    return data;
+  } catch (e) {
+    const stale = JSON.parse(localStorage.getItem(ck) || "null");
+    if (stale) return stale.data;
+    throw e;
+  }
+}
+
+/* NOAA time_tags are UTC, sometimes without a Z, sometimes space-separated. */
+function noaaTime(s) {
+  s = String(s).replace(" ", "T");
+  return new Date(s.endsWith("Z") ? s : s + "Z");
+}
+/* SWPC products come in two shapes: array-of-arrays with a header row, or
+   array-of-objects. Normalise to plain objects keyed by the header names. */
+function noaaRows(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  if (Array.isArray(raw[0])) {
+    const head = raw[0];
+    return raw.slice(1).map(r => Object.fromEntries(head.map((k, i) => [k, r[i]])));
+  }
+  return raw;
+}
+async function fetchKp() {
+  const raw = await cachedFetch("kp", "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json", 15);
+  const data = noaaRows(raw)
+    .map(r => ({ time: noaaTime(r.time_tag), kp: parseFloat(r.Kp ?? r.kp_index ?? r.kp) }))
+    .filter(r => !isNaN(r.kp));
+  state.kpSeries = data.slice(-8);
+  const last = data[data.length - 1];
+  if (last) { state.kp = last.kp; state.kpTime = last.time; }
+}
+async function fetchWind() {
+  const rows = noaaRows(await cachedFetch("plasma", "https://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json", 10));
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const speed = parseFloat(rows[i].speed);
+    if (!isNaN(speed)) {
+      state.wind = { speed, density: parseFloat(rows[i].density), time: noaaTime(rows[i].time_tag) };
+      return;
+    }
+  }
+}
+async function fetchMag() {
+  const rows = noaaRows(await cachedFetch("mag", "https://services.swpc.noaa.gov/products/solar-wind/mag-5-minute.json", 10));
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const bz = parseFloat(rows[i].bz_gsm);
+    if (!isNaN(bz)) {
+      state.mag = { bz, bt: parseFloat(rows[i].bt), time: noaaTime(rows[i].time_tag) };
+      return;
+    }
+  }
+}
+async function fetchCloud() {
+  const { lat, lng } = state.loc;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&hourly=cloud_cover&forecast_days=2&timezone=auto`;
+  const data = await cachedFetch("cloud-" + lat.toFixed(2) + "-" + lng.toFixed(2), url, 30);
+  state.cloud = {
+    times: data.hourly.time.map(t => new Date(t)),
+    cover: data.hourly.cloud_cover
+  };
+}
+
+/* ---------------- verdict -------------------------------------------- */
+function cloudDuringDark() {
+  if (!state.cloud || !state.night) return null;
+  const start = state.night.duskAstro ? state.night.duskAstro.valueOf() : Date.now();
+  const end = state.night.dawnAstro ? state.night.dawnAstro.valueOf() : start + 8 * 3600000;
+  const pts = [];
+  for (let i = 0; i < state.cloud.times.length; i++) {
+    const t = state.cloud.times[i].valueOf();
+    if (t >= start - 1800000 && t <= end + 1800000) pts.push({ time: state.cloud.times[i], cover: state.cloud.cover[i] });
+  }
+  return pts.length ? pts : null;
+}
+function fmtTime(d) {
+  if (!d) return "–";
+  let h = d.getHours(), m = d.getMinutes();
+  const ap = h >= 12 ? "pm" : "am";
+  h = h % 12 || 12;
+  return h + ":" + String(m).padStart(2, "0") + ap;
+}
+function cloudPhrase(pts) {
+  if (!pts) return null;
+  const avg = pts.reduce((s, p) => s + p.cover, 0) / pts.length;
+  if (avg < 25) return { text: "clear all night", avg };
+  if (avg > 85) return { text: "cloudy all night", avg };
+  // look for a sustained clearing (two consecutive hours under 40%)
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (pts[i].cover < 40 && pts[i + 1].cover < 40) {
+      if (i === 0) return { text: avg < 50 ? "mostly clear" : "clear early, cloud later", avg };
+      return { text: "clearing after " + fmtTime(pts[i].time), avg };
+    }
+  }
+  if (avg < 55) return { text: "patchy cloud", avg };
+  return { text: "mostly cloudy", avg };
+}
+function moonPhrase() {
+  const n = state.night, mi = state.moon;
+  if (!n || !mi) return null;
+  const pct = Math.round(mi.fraction * 100);
+  if (pct < 5) return "no moon";
+  const dusk = n.duskAstro ? n.duskAstro.valueOf() : Date.now();
+  const dawn = n.dawnAstro ? n.dawnAstro.valueOf() : dusk + 8 * 3600000;
+  if (n.moonset && n.moonset.valueOf() > dusk && n.moonset.valueOf() < dawn)
+    return "moon sets " + fmtTime(n.moonset);
+  if (n.moonrise && n.moonrise.valueOf() > dusk && n.moonrise.valueOf() < dawn)
+    return "moon rises " + fmtTime(n.moonrise);
+  // is the moon up through the dark window?
+  const midDark = new Date((dusk + dawn) / 2);
+  const up = moonAltitude(midDark, state.loc.lat, state.loc.lng) > 0;
+  if (up) return pct > 60 ? "bright moon all night (" + pct + "%)" : "moon up all night (" + pct + "%)";
+  return "moon stays down";
+}
+function computeVerdict() {
+  if (state.kp == null) {
+    return state.fetchedAt
+      ? { level: -1, label: "No signal", why: "Couldn’t reach the space weather feed. Try again when you’re back in range." }
+      : { level: -1, label: "Looking up…", why: "" };
+  }
+  const kp = state.kp;
+  let level = kp >= 6 ? 3 : kp >= 5 ? 2 : kp >= 4 ? 1 : 0;
+  // solar wind can promote or demote by one step
+  if (state.mag && state.wind) {
+    if (state.mag.bz <= -8 && state.wind.speed >= 450 && kp >= 3.3) level = Math.min(3, level + 1);
+    else if (state.mag.bz >= 6 && level > 0) level -= 1;
+  }
+  const pts = cloudDuringDark();
+  const cp = cloudPhrase(pts);
+  let cloudKilled = false;
+  if (cp) {
+    if (cp.avg > 85) { level = 0; cloudKilled = true; }
+    else if (cp.avg > 60 && level > 0) level -= 1;
+  }
+  // "Go now" only if it is actually dark now and not clouded over right now
+  if (level === 3) {
+    const darkNow = sunAltitude(new Date(), state.loc.lat, state.loc.lng) < RAD * -12;
+    let cloudNowOk = true;
+    if (state.cloud) {
+      const now = Date.now();
+      let best = null, bd = Infinity;
+      state.cloud.times.forEach((t, i) => {
+        const d = Math.abs(t.valueOf() - now);
+        if (d < bd) { bd = d; best = state.cloud.cover[i]; }
+      });
+      if (best != null && best > 70) cloudNowOk = false;
+    }
+    if (!darkNow || !cloudNowOk) level = 2;
+  }
+  const parts = ["Kp " + kp.toFixed(1)];
+  if (cp) parts.push(cp.text);
+  const mp = moonPhrase();
+  if (mp) parts.push(mp);
+  let why = parts.join(", ") + ".";
+  if (cloudKilled && kp >= 4) why = "Kp " + kp.toFixed(1) + " but " + cp.text + " — the sky has other plans.";
+  return { level, label: ["Low", "Possible", "Good", "Go now"][level], why };
+}
+function secondaryLine() {
+  const bits = [];
+  const now = new Date();
+  // meteor shower within 2 days of peak
+  const year = now.getFullYear();
+  for (const s of METEOR_SHOWERS) {
+    if (s.tas === "not visible") continue;
+    for (const y of [year - 1, year, year + 1]) {
+      const peak = new Date(y, s.m - 1, s.d);
+      const dd = (peak - now) / DAY_MS;
+      if (dd > -1.5 && dd < 2) {
+        const when = dd < 0.5 ? "peaks tonight" : dd < 1.5 ? "peaks tomorrow night" : "peaking now";
+        const moonOk = state.moon && state.moon.fraction < 0.5;
+        bits.push(s.name + " " + when + (moonOk ? " — worth an alarm" : ""));
+      }
+    }
+  }
+  // Milky Way in prime months, moon permitting
+  const m = now.getMonth();
+  if ((m >= 3 && m <= 8) && state.moon && state.moon.fraction < 0.4) {
+    bits.push("Milky Way core well placed once it’s properly dark");
+  }
+  return bits.join(" · ");
+}
+
+/* ---------------- render: home --------------------------------------- */
+function renderHome() {
+  const v = computeVerdict();
+  const el = document.getElementById("verdict");
+  el.textContent = v.label;
+  el.className = "verdict " + (v.level < 0 ? "v-unknown" : ["v-low", "v-possible", "v-good", "v-go"][v.level]);
+  document.getElementById("why").textContent = v.why;
+  document.getElementById("secondary").textContent = secondaryLine();
+  const asof = document.getElementById("asof");
+  if (state.kpTime) {
+    const mins = Math.round((Date.now() - state.kpTime.valueOf()) / 60000);
+    asof.textContent = "Kp as of " + (mins < 90 ? mins + " min ago" : Math.round(mins / 60) + " h ago");
+  } else asof.textContent = "";
+  const loc = document.getElementById("locLine");
+  loc.innerHTML = "";
+  loc.append(state.loc.label + " · ");
+  const btn = document.createElement("button");
+  btn.textContent = "use my location";
+  btn.onclick = useMyLocation;
+  loc.appendChild(btn);
+}
+function useMyLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.loc = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: "your location" };
+    const s = loadSettings(); s.homeLocation = state.loc; saveSettings(s);
+    localStorage.removeItem("nw-cache-cloud-" + state.loc.lat.toFixed(2) + "-" + state.loc.lng.toFixed(2));
+    refresh();
+  }, () => {
+    document.getElementById("locLine").insertAdjacentText("afterbegin", "Location unavailable — using Hobart. ");
+  });
+}
+
+/* ---------------- render: aurora detail ------------------------------ */
+function renderAurora() {
+  document.getElementById("kpNow").textContent = state.kp != null ? state.kp.toFixed(1) : "–";
+  const upd = document.getElementById("kpUpdated");
+  upd.textContent = state.kpTime ? "updated " + fmtTime(state.kpTime) : "no data — will retry";
+  // sparkline
+  const svg = document.getElementById("kpSpark");
+  svg.innerHTML = "";
+  if (state.kpSeries.length > 1) {
+    const W = 300, H = 56, max = 9;
+    const line5 = H - 6 - (5 / max) * (H - 16);
+    svg.innerHTML += `<line class="axis" x1="0" y1="${line5}" x2="${W - 24}" y2="${line5}"/>` +
+      `<text x="${W - 20}" y="${line5 + 3}">Kp5</text>`;
+    const n = state.kpSeries.length;
+    const ptsStr = state.kpSeries.map((p, i) => {
+      const x = (i / (n - 1)) * (W - 30);
+      const y = H - 6 - (Math.min(p.kp, max) / max) * (H - 16);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    svg.innerHTML += `<polyline points="${ptsStr}"/>`;
+  }
+  // wind sentence
+  const ws = document.getElementById("windSentence");
+  const wn = document.getElementById("windNumbers");
+  if (state.wind && state.mag) {
+    const sp = state.wind.speed, bz = state.mag.bz;
+    const speedWord = sp >= 550 ? "fast" : sp >= 430 ? "brisk" : "slow";
+    const bzWord = bz <= -5 ? "tipped the right way" : bz < 0 ? "leaning the right way" : bz < 5 ? "sitting neutral" : "tipped the wrong way";
+    ws.textContent = `The wind is ${speedWord} and the field is ${bzWord}.`;
+    wn.textContent = `${Math.round(sp)} km/s · Bz ${bz > 0 ? "+" : ""}${bz.toFixed(1)} nT · Bt ${state.mag.bt.toFixed(1)} nT`;
+  } else {
+    ws.textContent = "Solar wind feed unavailable right now.";
+    wn.textContent = "";
+  }
+  // cloud
+  const cn = document.getElementById("cloudNow");
+  const bars = document.getElementById("cloudBars");
+  bars.innerHTML = "";
+  if (state.cloud) {
+    const now = Date.now();
+    let idx = state.cloud.times.findIndex(t => t.valueOf() >= now - 1800000);
+    if (idx < 0) idx = 0;
+    cn.textContent = state.cloud.cover[idx] + "% cover now";
+    for (let i = idx; i < Math.min(idx + 6, state.cloud.times.length); i++) {
+      const div = document.createElement("div");
+      div.className = "cloudbar";
+      const h = Math.max(3, state.cloud.cover[i] * 0.5);
+      div.innerHTML = `<div class="bar" style="height:${h}px"></div><div class="lbl">${fmtTime(state.cloud.times[i]).replace(":00", "")}</div>`;
+      bars.appendChild(div);
+    }
+  } else cn.textContent = "Cloud forecast unavailable.";
+  // darkness & moon
+  const n = state.night, mi = state.moon;
+  const kv = document.getElementById("darkKv");
+  const rows = [];
+  if (n) {
+    rows.push(["Sunset", fmtTime(n.sunset)]);
+    rows.push(["Properly dark", fmtTime(n.duskAstro) + " – " + fmtTime(n.dawnAstro)]);
+    rows.push(["Moonrise", n.moonrise ? fmtTime(n.moonrise) : "doesn’t rise tonight"]);
+    rows.push(["Moonset", n.moonset ? fmtTime(n.moonset) : "doesn’t set tonight"]);
+  }
+  if (mi) rows.push(["Moon illumination", Math.round(mi.fraction * 100) + "%" + (mi.waxing ? " and growing" : " and shrinking")]);
+  kv.innerHTML = rows.map(r => `<div class="kv"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join("");
+}
+
+/* ---------------- render: sky ----------------------------------------- */
+function renderSky() {
+  const now = new Date();
+  document.getElementById("mwText").textContent = MILKY_WAY[now.getMonth()];
+  const note = document.getElementById("mwMoonNote");
+  if (state.moon) {
+    const pct = Math.round(state.moon.fraction * 100);
+    note.textContent = pct < 20 ? "Moon is " + pct + "% — dark enough to see it properly."
+      : pct < 50 ? "Moon is " + pct + "% — the core will still show, fainter arms won’t."
+      : "Moon is " + pct + "% — moonlight will wash out most of it. Aim for moonset or another week.";
+  }
+  const list = document.getElementById("showerList");
+  list.innerHTML = "";
+  const upcoming = METEOR_SHOWERS.map(s => {
+    let peak = new Date(now.getFullYear(), s.m - 1, s.d);
+    if ((now - peak) / DAY_MS > 14) peak = new Date(now.getFullYear() + 1, s.m - 1, s.d);
+    return { ...s, peak };
+  }).sort((a, b) => a.peak - b.peak);
+  for (const s of upcoming) {
+    const dd = (s.peak - now) / DAY_MS;
+    const near = dd > -1.5 && dd < 3 && s.tas !== "not visible";
+    const moonAtPeak = moonIllumination(s.peak).fraction;
+    const alarm = near && moonAtPeak < 0.5;
+    const div = document.createElement("div");
+    div.className = "shower";
+    div.innerHTML =
+      `<div class="top"><span>${s.name}${s.tas === "not visible" ? '<span class="tag">not from here</span>' : ""}</span>` +
+      `<span class="when">${s.peak.toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span></div>` +
+      `<div class="sub">${s.note}</div>` +
+      (alarm ? `<div class="alarm">Peaking now with a ${Math.round(moonAtPeak * 100)}% moon — worth setting an alarm.</div>`
+        : near ? `<div class="sub">Peaking now, but the moon is ${Math.round(moonAtPeak * 100)}% — it’ll cost you the faint ones.</div>` : "");
+    list.appendChild(div);
+  }
+}
+
+/* ---------------- render: spots ---------------------------------------- */
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = RAD * (b.lat - a.lat), dLng = RAD * (b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(RAD * a.lat) * Math.cos(RAD * b.lat) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function renderSpots() {
+  const list = document.getElementById("spotList");
+  list.innerHTML = "";
+  const withDist = DARK_SKY_SPOTS.map(s => ({ ...s, km: haversineKm(state.loc, s) }))
+    .sort((a, b) => a.km - b.km);
+  for (const s of withDist) {
+    const div = document.createElement("div");
+    div.className = "spot";
+    const dots = "●".repeat(s.dark) + "○".repeat(5 - s.dark);
+    div.innerHTML =
+      `<div class="top"><span>${s.name}${s.south ? '<span class="tag">faces south</span>' : ""}</span>` +
+      `<span class="dist">${Math.round(s.km)} km</span></div>` +
+      `<div class="sub"><span class="darkdots">${dots}</span> · ${s.note}</div>`;
+    list.appendChild(div);
+  }
+}
+
+/* ---------------- sightings log (IndexedDB) ---------------------------- */
+let dbPromise = null;
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open("nightwatch", 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore("sightings", { keyPath: "id", autoIncrement: true });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function dbAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction("sightings").objectStore("sightings").getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbPut(entry) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("sightings", "readwrite");
+    tx.objectStore("sightings").put(entry);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("sightings", "readwrite");
+    tx.objectStore("sightings").delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+const STRENGTH_WORDS = { glow: "a glow", pillars: "pillars", dancing: "dancing" };
+async function renderLog() {
+  const entries = (await dbAll()).sort((a, b) => b.date.localeCompare(a.date));
+  const year = new Date().getFullYear();
+  const thisYear = entries.filter(e => e.date.startsWith(String(year)) && e.sawIt !== "didnt-look");
+  const saw = thisYear.filter(e => e.sawIt === "yes").length;
+  const line = document.getElementById("seasonLine");
+  line.textContent = thisYear.length === 0
+    ? "Nothing logged this year yet."
+    : `This year: out on ${thisYear.length} night${thisYear.length === 1 ? "" : "s"}, aurora on ${saw}.`;
+  document.getElementById("logCardHint").textContent = thisYear.length
+    ? `${thisYear.length} night${thisYear.length === 1 ? "" : "s"} this year` : "Nights out this year";
+  const list = document.getElementById("entryList");
+  list.innerHTML = "";
+  for (const e of entries) {
+    const div = document.createElement("div");
+    div.className = "entry" + (e.sawIt === "yes" ? " saw" : "");
+    const d = new Date(e.date + "T12:00:00");
+    const dateStr = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    let what = e.sawIt === "yes"
+      ? "Saw it" + (e.strength ? " — " + STRENGTH_WORDS[e.strength] : "") +
+        (e.colour ? ", " + e.colour : "") + (e.direction ? ", " + (e.direction === "overhead" ? "overhead" : "to the " + ({ S: "south", SE: "south-east", SW: "south-west" }[e.direction] || e.direction)) : "")
+      : e.sawIt === "no" ? "Went out, nothing" : "Didn’t look";
+    div.innerHTML =
+      `<div class="dot"></div><div class="meta"><div class="d">${dateStr}</div>` +
+      `<div class="sub">${what}${e.note ? " · " + escapeHtml(e.note) : ""}</div>` +
+      `<button class="btn small" style="margin-top:6px">Remove</button></div>` +
+      (e.photoBase64 ? `<img src="${e.photoBase64}" alt="sighting photo">` : "");
+    div.querySelector("button").onclick = async () => {
+      if (confirm("Remove this entry?")) { await dbDelete(e.id); renderLog(); }
+    };
+    list.appendChild(div);
+  }
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ---- entry form ---- */
+let photoData = null;
+function segValue(id) { return document.getElementById(id).dataset.value || null; }
+function wireSeg(id, onChange) {
+  const seg = document.getElementById(id);
+  seg.querySelectorAll("button").forEach(b => {
+    b.onclick = () => {
+      seg.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      seg.dataset.value = b.dataset.v;
+      if (onChange) onChange(b.dataset.v);
+    };
+  });
+}
+function resetForm() {
+  const today = new Date();
+  document.getElementById("fDate").value =
+    today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  ["fSaw", "fStrength", "fColour", "fDirection"].forEach(id => {
+    const seg = document.getElementById(id);
+    seg.dataset.value = "";
+    seg.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+  });
+  document.getElementById("fNote").value = "";
+  document.getElementById("fPhoto").value = "";
+  document.getElementById("photoPreview").classList.add("hidden");
+  document.getElementById("sawFields").classList.add("hidden");
+  photoData = null;
+}
+function wireForm() {
+  wireSeg("fSaw", v => {
+    document.getElementById("sawFields").classList.toggle("hidden", v !== "yes");
+  });
+  wireSeg("fStrength"); wireSeg("fColour"); wireSeg("fDirection");
+  document.getElementById("fPhoto").onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1280;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      photoData = c.toDataURL("image/jpeg", 0.8);
+      const pv = document.getElementById("photoPreview");
+      pv.src = photoData;
+      pv.classList.remove("hidden");
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+  document.getElementById("newEntryBtn").onclick = () => { resetForm(); location.hash = "#/entry"; };
+  document.getElementById("cancelEntryBtn").onclick = () => { location.hash = "#/log"; };
+  document.getElementById("saveEntryBtn").onclick = async () => {
+    const sawIt = segValue("fSaw");
+    if (!sawIt) { alert("Pick one: saw it, nothing, or didn’t look."); return; }
+    const entry = {
+      date: document.getElementById("fDate").value,
+      sawIt,
+      strength: sawIt === "yes" ? segValue("fStrength") : null,
+      colour: sawIt === "yes" ? segValue("fColour") : null,
+      direction: sawIt === "yes" ? segValue("fDirection") : null,
+      note: document.getElementById("fNote").value.trim(),
+      photoBase64: sawIt === "yes" ? photoData : null,
+      location: state.loc.label
+    };
+    await dbPut(entry);
+    location.hash = "#/log";
+    renderLog();
+  };
+}
+
+/* ---------------- routing --------------------------------------------- */
+const VIEWS = { "": "view-home", "aurora": "view-aurora", "sky": "view-sky", "spots": "view-spots", "log": "view-log", "entry": "view-entry" };
+function route() {
+  const name = (location.hash.replace(/^#\/?/, "") || "");
+  const id = VIEWS[name] || "view-home";
+  Object.values(VIEWS).forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+  if (id === "view-aurora") renderAurora();
+  if (id === "view-sky") renderSky();
+  if (id === "view-spots") renderSpots();
+  if (id === "view-log") renderLog();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------------- night vision mode ------------------------------------ */
+function wireNightMode() {
+  const btn = document.getElementById("nightToggle");
+  const apply = on => {
+    document.documentElement.classList.toggle("night", on);
+    btn.textContent = on ? "normal" : "night vision";
+    document.querySelector('meta[name="theme-color"]').content = on ? "#040302" : "#0a0e17";
+  };
+  let on = localStorage.getItem("nw-night") === "1";
+  apply(on);
+  btn.onclick = () => {
+    on = !on;
+    localStorage.setItem("nw-night", on ? "1" : "0");
+    apply(on);
+  };
+}
+
+/* ---------------- boot -------------------------------------------------- */
+async function refresh() {
+  const now = new Date();
+  state.night = nightTimes(now, state.loc.lat, state.loc.lng);
+  state.moon = moonIllumination(now);
+  const jobs = [
+    fetchKp().catch(() => state.errors.push("kp")),
+    fetchWind().catch(() => {}),
+    fetchMag().catch(() => {}),
+    fetchCloud().catch(() => state.errors.push("cloud"))
+  ];
+  renderHome(); // render immediately with astronomy-only data
+  await Promise.all(jobs);
+  state.fetchedAt = new Date();
+  renderHome();
+  route(); // re-render whichever view is open
+}
+function boot() {
+  const s = loadSettings();
+  state.loc = s.homeLocation || DEFAULT_LOC;
+  wireNightMode();
+  wireForm();
+  route();
+  refresh();
+  setInterval(refresh, 10 * 60000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && state.fetchedAt && Date.now() - state.fetchedAt > 10 * 60000) refresh();
+  });
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+}
+boot();
+</script>
+</body>
+</html>
