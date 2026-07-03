@@ -1,5 +1,5 @@
 /* Nightwatch service worker — cache the shell, let live data pass through. */
-const CACHE = "nightwatch-v4";
+const CACHE = "nightwatch-v5";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./background.png"];
 
 self.addEventListener("install", e => {
